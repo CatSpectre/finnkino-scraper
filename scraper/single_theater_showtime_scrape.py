@@ -10,7 +10,7 @@ def fetch_showtimes_for_key(site_key: str, date: Optional[str] = None, token: Op
 
     If `token` is not provided, a bearer token will be obtained.
     """
-    p = Path(keys_path) if keys_path else Path(__file__).parent / "data" / "vistacinema_list.json"
+    p = Path(keys_path) if keys_path else Path(__file__).parent / "data" / "cinemas.json"
     keys = json.loads(p.read_text(encoding="utf-8"))
     entry = next((e for e in keys if e.get("key") == site_key), None)
     if not entry:

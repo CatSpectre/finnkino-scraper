@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 def load_keys(path: str | None = None):
-    p = Path(path) if path else Path(__file__).parent / "data" / "vistacinema_list.json"
+    p = Path(path) if path else Path(__file__).parent / "data" / "cinemas.json"
     return json.loads(p.read_text(encoding="utf-8"))
 
 
