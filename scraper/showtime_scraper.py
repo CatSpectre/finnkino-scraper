@@ -12,7 +12,25 @@ def get_theater_showtimes_by_date(token, entry, date: str | None = None, delay=0
     """
     if date is None:
         date = datetime.date.today().isoformat()
-    data_dir = Path(__file__).parent / "data"
+
+    # parse date string to determine year and ISO week
+    try:
+        dt = datetime.date.fromisoformat(date)
+    except Exception:
+        try:
+            parts = date.split('.')
+            if len(parts) == 3:
+                d = int(parts[0])
+                m = int(parts[1])
+                y = int(parts[2])
+                dt = datetime.date(y, m, d)
+            else:
+                dt = datetime.date.today()
+        except Exception:
+            dt = datetime.date.today()
+
+    iso_year, iso_week, _ = dt.isocalendar()
+    data_dir = Path(__file__).parent / "data" / str(iso_year) / f"week_{iso_week:02d}"
     data_dir.mkdir(parents=True, exist_ok=True)
 
     headers = {
