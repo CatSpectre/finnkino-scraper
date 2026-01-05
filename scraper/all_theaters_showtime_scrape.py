@@ -13,4 +13,4 @@ if __name__ == "__main__":
     token = get_bearer_token()
     keys = load_keys()
     for entry in keys:
-        token = get_theater_showtimes_by_date(token, entry)
+        get_theater_showtimes_by_date(token, entry)
