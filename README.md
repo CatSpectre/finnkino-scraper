@@ -1,15 +1,38 @@
 # Finnkino Scraper
 
-## Playwright Browsers
+Scraper for Finnkino cinema data. Still working on it!
 
-After installing Python dependencies, Playwright requires browser binaries to be installed.
+## Summary
+- Currently focused on scraping weekly showtimes.
+- Contains utilities to scrape seat availability, film metadata and cinema lists.
 
-Run:
+## Key scripts
+- [scraper/weekly_showtime_scrape.py](scraper/weekly_showtime_scrape.py): main weekly showtime scraper.
+- [scraper/seat_availability_scraper.py](scraper/seat_availability_scraper.py): seat availability scraper.
+- [scraper/get_cinema_list.py](scraper/get_cinema_list.py): fetch cinema listings.
+
+## Quickstart
+1. Install Python dependencies:
 
 ```bash
 python3 -m pip install -r requirements.txt
-python3 -m playwright install chromium
-python3 -m playwright install-deps  # optional: installs Linux system dependencies
 ```
 
-This will download the Chromium browser Playwright uses and (on Linux) install helper packages.
+2. Install Playwright browsers:
+
+```bash
+python3 -m pip install playwright
+python3 -m playwright install chromium
+```
+
+3. Run the weekly scraper locally:
+
+```bash
+python3 scraper/weekly_showtime_scrape.py
+```
+
+## CI / Automation
+- A GitHub Actions workflow is included at [.github/workflows/scrapebot.yml](.github/workflows/scrapebot.yml). It runs the weekly scraper on a schedule and commits scraped data back to the repository.
+
+## Notes
+- This project is WIP
