@@ -33,6 +33,13 @@ jobs:
       - name: Run Weekly Showtime Scraper
         run: python scraper/weekly_showtime_scrape.py
 
+      - name: Upload Debug Screenshot
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          path: debug.png
+
       - name: Commit and Push Data
         run: |
           git config --global user.name "Scraper Bot"
@@ -41,3 +48,4 @@ jobs:
           git reset -- finnkino_archive.db || true
           git commit -m "Auto-update scraped data" || exit 0
           git push
+          
