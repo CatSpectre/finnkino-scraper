@@ -55,31 +55,43 @@ def _load_token() -> str | None:
 
 def _fetch_token_via_playwright() -> str | None:
     with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True
-        )
-        
+        # 1. Use a standard window size and common args to look less like a bot
+        browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled"])
         context = browser.new_context(
-            user_agent=DEFAULT_USER_AGENT
+            user_agent=DEFAULT_USER_AGENT,
+            viewport={'width': 1920, 'height': 1080}
         )
         page = context.new_page()
         token = None
+        
         try:
-            with page.expect_response(lambda response: DIGITAL_API_HOST in response.url, timeout=60000) as response_info:
-                page.goto(BASE_URL)
+            # 2. Use a custom predicate to capture the token from ANY request 
+            # (sometimes it's in a GET request, not just a 'response')
+            def request_handler(request):
+                nonlocal token
+                auth = request.headers.get('authorization')
+                if auth and DIGITAL_API_HOST in request.url:
+                    token = auth
 
-            response = response_info.value
-            token = response.request.headers.get('authorization')
-            print("SUCCESS! Token captured")
-            # print(token)
+            page.on("request", request_handler)
+
+            # 3. Go to the URL and wait until the network is idle
+            # This is usually more reliable than expect_response for background APIs
+            page.goto(BASE_URL, wait_until="networkidle", timeout=60000)
+
+            # 4. Optional: Small sleep to allow async JS to fire after idle
+            if not token:
+                time.sleep(5)
+
+            if token:
+                print("SUCCESS! Token captured")
+            else:
+                print("Failed to capture token: No request with Authorization header found.")
 
         except Exception as e:
             print(f"Error capturing token: {e}")
         finally:
-            try:
-                browser.close()
-            except Exception:
-                pass
+            browser.close()
 
         return token
 
