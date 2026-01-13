@@ -90,6 +90,7 @@ def _fetch_token_via_playwright() -> str | None:
 
         except Exception as e:
             print(f"Error capturing token: {e}")
+            page.screenshot(path="debug.png")
         finally:
             browser.close()
 
