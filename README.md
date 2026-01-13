@@ -31,8 +31,5 @@ python3 -m playwright install chromium
 python3 scraper/weekly_showtime_scrape.py
 ```
 
-## CI / Automation
-- A GitHub Actions workflow is included at [.github/workflows/scrapebot.yml](.github/workflows/scrapebot.yml). It runs the weekly scraper on a schedule and commits scraped data back to the repository.
-
 ## Notes
 - This project is WIP
