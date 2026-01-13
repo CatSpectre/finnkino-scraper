@@ -1,5 +1,4 @@
 from playwright.sync_api import sync_playwright
-from playwright_stealth import stealth
 from config import BASE_URL, DIGITAL_API_HOST, DEFAULT_USER_AGENT
 from pathlib import Path
 import json
