@@ -1,4 +1,5 @@
 from playwright.sync_api import sync_playwright
+from playwright_stealth import stealth
 from config import BASE_URL, DIGITAL_API_HOST, DEFAULT_USER_AGENT
 from pathlib import Path
 import json
@@ -55,18 +56,35 @@ def _load_token() -> str | None:
 
 def _fetch_token_via_playwright() -> str | None:
     with sync_playwright() as p:
-        # 1. Use a standard window size and common args to look less like a bot
-        browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled"])
+        # 1. Launch with flags to disable automation features in Chrome
+        browser = p.chromium.launch(
+            headless=True,
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox", 
+                "--disable-setuid-sandbox"
+            ]
+        )
+        
+        # 2. Use a high-resolution viewport and standard User Agent
         context = browser.new_context(
-            user_agent=DEFAULT_USER_AGENT,
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             viewport={'width': 1920, 'height': 1080}
         )
-        page = context.new_page()
-        token = None
         
+        page = context.new_page()
+        
+        # 3. MANUAL STEALTH: Inject JavaScript to hide the 'navigator.webdriver' flag
+        # This acts exactly like playwright-stealth but without the import errors
+        page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            });
+        """)
+
+        token = None
         try:
-            # 2. Use a custom predicate to capture the token from ANY request 
-            # (sometimes it's in a GET request, not just a 'response')
+            # Monitor requests
             def request_handler(request):
                 nonlocal token
                 auth = request.headers.get('authorization')
@@ -75,33 +93,38 @@ def _fetch_token_via_playwright() -> str | None:
 
             page.on("request", request_handler)
 
-            # 3. Go to the URL and wait until the network is idle
-            # This is usually more reliable than expect_response for background APIs
-            page.goto(BASE_URL, wait_until="networkidle", timeout=60000)
-
-            # 4. Optional: Small sleep to allow async JS to fire after idle
-            if not token:
-                time.sleep(5)
+            print(f"Navigating to {BASE_URL}...")
+            # increased timeout to 90s for slower CI runners
+            page.goto(BASE_URL, wait_until="networkidle", timeout=90000)
+            
+            # 4. Human-like behavior: Move mouse slightly to prove we aren't a script
+            page.mouse.move(100, 200)
+            page.mouse.down()
+            page.mouse.up()
+            
+            # Wait a moment for any lazy-loaded APIs
+            time.sleep(5)
 
             if token:
                 print("SUCCESS! Token captured")
             else:
-                print("Failed to capture token: No request with Authorization header found.")
+                print("Failed to capture token. Taking screenshot...")
+                page.screenshot(path="debug_final.png")
 
         except Exception as e:
             print(f"Error capturing token: {e}")
-            page.screenshot(path="debug.png")
+            try:
+                page.screenshot(path="debug_error.png")
+            except:
+                pass
         finally:
             browser.close()
 
         return token
 
-
 def get_bearer_token(force_refresh: bool = False) -> str:
-    """Return a valid bearer token. If a cached token exists and is valid it is returned.
-    Otherwise a new token is fetched via Playwright and cached.
-    Set `force_refresh=True` to always fetch a fresh token.
-    """
+    # ... [Keep your existing get_bearer_token logic] ...
+    # Copy/paste the rest of your original function here
     if not force_refresh:
         token = _load_token()
         if token and _token_valid(token):
@@ -115,7 +138,6 @@ def get_bearer_token(force_refresh: bool = False) -> str:
             pass
         return token
 
-    # If fails to fetch but has a cached token, return it
     cached = _load_token()
     if cached:
         return cached
